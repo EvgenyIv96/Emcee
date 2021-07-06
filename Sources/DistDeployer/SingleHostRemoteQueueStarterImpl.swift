@@ -7,50 +7,53 @@ import QueueModels
 import Tmp
 import UniqueIdentifierGenerator
 
-public final class RemoteQueueStarter {
-    private let deploymentId: String
-    private let deploymentDestination: DeploymentDestination
-    private let emceeVersion: Version
+public final class SingleHostRemoteQueueStarterImpl: SingleHostRemoteQueueStarter {
     private let logger: ContextualLogger
     private let processControllerProvider: ProcessControllerProvider
-    private let queueServerConfigurationLocation: QueueServerConfigurationLocation
     private let tempFolder: TemporaryFolder
     private let uniqueIdentifierGenerator: UniqueIdentifierGenerator
 
     public init(
-        deploymentId: String,
-        deploymentDestination: DeploymentDestination,
-        emceeVersion: Version,
         logger: ContextualLogger,
         processControllerProvider: ProcessControllerProvider,
-        queueServerConfigurationLocation: QueueServerConfigurationLocation,
         tempFolder: TemporaryFolder,
         uniqueIdentifierGenerator: UniqueIdentifierGenerator
     ) {
-        self.deploymentId = deploymentId
-        self.deploymentDestination = deploymentDestination
-        self.emceeVersion = emceeVersion
         self.logger = logger
         self.processControllerProvider = processControllerProvider
-        self.queueServerConfigurationLocation = queueServerConfigurationLocation
         self.tempFolder = tempFolder
         self.uniqueIdentifierGenerator = uniqueIdentifierGenerator
     }
     
-    public func deployAndStart() throws {
+    public func deployAndStart(
+        deploymentId: DeploymentId,
+        deploymentDestination: DeploymentDestination,
+        emceeVersion: Version,
+        queueServerConfigurationLocation: QueueServerConfigurationLocation
+    ) throws {
         let deployablesGenerator = DeployablesGenerator(
             emceeVersion: emceeVersion,
             remoteEmceeBinaryName: "EmceeQueueServer"
         )
         try deploy(
+            deploymentId: deploymentId,
+            deploymentDestination: deploymentDestination,
             deployableItems: try deployablesGenerator.deployables(),
-            emceeBinaryDeployableItem: try deployablesGenerator.runnerTool()
+            emceeBinaryDeployableItem: try deployablesGenerator.runnerTool(),
+            emceeVersion: emceeVersion,
+            logger: logger,
+            queueServerConfigurationLocation: queueServerConfigurationLocation
         )
     }
     
     private func deploy(
+        deploymentId: DeploymentId,
+        deploymentDestination: DeploymentDestination,
         deployableItems: [DeployableItem],
-        emceeBinaryDeployableItem: DeployableItem
+        emceeBinaryDeployableItem: DeployableItem,
+        emceeVersion: Version,
+        logger: ContextualLogger,
+        queueServerConfigurationLocation: QueueServerConfigurationLocation
     ) throws {
         let launchdPlistTargetPath = "queue_server_launchd.plist"
         let launchdPlist = RemoteQueueLaunchdPlist(

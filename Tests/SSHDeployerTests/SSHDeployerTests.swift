@@ -13,7 +13,7 @@ class SSHDeployerTests: XCTestCase {
     private lazy var tempFolder = assertDoesNotThrow { try TemporaryFolder() }
     
     func testForInputCorrectness() throws {
-        let deploymentId = UUID().uuidString
+        let deploymentId = DeploymentId(UUID().uuidString)
         let deployableWithSingleFile = DeployableItem(
             name: "deployable_name",
             files: [

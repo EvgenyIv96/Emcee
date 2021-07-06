@@ -7,7 +7,7 @@ import Tmp
 
 public final class RemoteQueueLaunchdPlist {
     /// Unique deployment id
-    private let deploymentId: String
+    private let deploymentId: DeploymentId
     /// Deployment destination where queue should start
     private let deploymentDestination: DeploymentDestination
     /// Emcee binary version
@@ -18,7 +18,7 @@ public final class RemoteQueueLaunchdPlist {
     private let queueServerConfigurationLocation: QueueServerConfigurationLocation
 
     public init(
-        deploymentId: String,
+        deploymentId: DeploymentId,
         deploymentDestination: DeploymentDestination,
         emceeDeployableItem: DeployableItem,
         emceeVersion: Version,
@@ -46,7 +46,7 @@ public final class RemoteQueueLaunchdPlist {
             deploymentId: deploymentId
         )
         
-        let jobLabel = "ru.avito.emcee.queueServer.\(deploymentId.removingWhitespaces())"
+        let jobLabel = "ru.avito.emcee.queueServer.\(deploymentId.value.removingWhitespaces())"
         
         let launchdPlist = LaunchdPlist(
             job: LaunchdJob(

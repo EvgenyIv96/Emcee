@@ -1,9 +1,6 @@
 import ArgLib
-import BucketQueue
 import DI
-import DateProvider
 import Deployer
-import DeveloperDirLocator
 import DistDeployer
 import EmceeVersion
 import FileSystem
@@ -12,17 +9,10 @@ import EmceeLogging
 import LoggingSetup
 import Metrics
 import MetricsExtensions
-import PathLib
-import PluginManager
-import PortDeterminer
-import ProcessController
 import QueueClient
-import QueueCommunication
 import QueueModels
 import QueueServer
-import RemotePortDeterminer
 import RequestSender
-import ResourceLocationResolver
 import SignalHandling
 import SimulatorPool
 import SocketModels
@@ -89,13 +79,23 @@ public final class RunTestsOnRemoteQueueCommand: Command {
         )
         
         di.set(tempFolder, for: TemporaryFolder.self)
-
-        let runningQueueServerAddress = try detectRemotelyRunningQueueServerPortsOrStartRemoteQueueIfNeeded(
+        
+        let runningQueueServerAddress = try RemoteQueueDiscovererAndStarter(
+            logger: logger,
+            remoteQueueLocator: RemoteQueueLocatorImpl(
+                logger: logger,
+                remoteQueueDetectorProvider: DefaultRemoteQueueDetectorProvider(
+                    logger: logger,
+                    portRange: EmceePorts.defaultQueuePortRange,
+                    requestSenderProvider: try di.get()
+                )
+            ),
+            di: di
+        ).detectRemotelyRunningQueueServerPortsOrStartRemoteQueueIfNeeded(
             emceeVersion: emceeVersion,
-            queueServerDeploymentDestination: queueServerConfiguration.queueServerDeploymentDestination,
+            queueServerDeploymentDestinations: queueServerConfiguration.queueServerDeploymentDestinations,
             queueServerConfigurationLocation: queueServerConfigurationLocation,
-            jobId: testArgFile.prioritizedJob.jobId,
-            logger: logger
+            deploymentId: DeploymentId(try di.get(UniqueIdentifierGenerator.self).generate())
         )
         let jobResults = try runTestsOnRemotelyRunningQueue(
             queueServerAddress: runningQueueServerAddress,
@@ -111,77 +111,6 @@ public final class RunTestsOnRemoteQueueCommand: Command {
             testDestinationConfigurations: testArgFile.testDestinationConfigurations
         )
         try resultOutputGenerator.generateOutput()
-    }
-    
-    private func detectRemotelyRunningQueueServerPortsOrStartRemoteQueueIfNeeded(
-        emceeVersion: Version,
-        queueServerDeploymentDestination: DeploymentDestination,
-        queueServerConfigurationLocation: QueueServerConfigurationLocation,
-        jobId: JobId,
-        logger: ContextualLogger
-    ) throws -> SocketAddress {
-        logger.info("Searching for queue server on '\(queueServerDeploymentDestination.host)' with queue version \(emceeVersion)")
-        let remoteQueueDetector = DefaultRemoteQueueDetector(
-            emceeVersion: emceeVersion,
-            logger: logger,
-            remotePortDeterminer: RemoteQueuePortScanner(
-                host: queueServerDeploymentDestination.host,
-                logger: logger,
-                portRange: EmceePorts.defaultQueuePortRange,
-                requestSenderProvider: try di.get()
-            )
-        )
-        var suitablePorts = try remoteQueueDetector.findSuitableRemoteRunningQueuePorts(timeout: 10)
-        if !suitablePorts.isEmpty {
-            let socketAddress = SocketAddress(
-                host: queueServerDeploymentDestination.host,
-                port: try selectPort(ports: suitablePorts)
-            )
-            logger.info("Found queue server at '\(socketAddress)'")
-            return socketAddress
-        }
-        
-        try startNewInstanceOfRemoteQueueServer(
-            jobId: jobId,
-            queueServerDeploymentDestination: queueServerDeploymentDestination,
-            emceeVersion: emceeVersion,
-            queueServerConfigurationLocation: queueServerConfigurationLocation,
-            logger: logger
-        )
-        
-        try di.get(Waiter.self).waitWhile(pollPeriod: 1.0, timeout: 30.0, description: "Wait for remote queue to start") {
-            suitablePorts = try remoteQueueDetector.findSuitableRemoteRunningQueuePorts(timeout: 10)
-            return suitablePorts.isEmpty
-        }
-        
-        let queueServerAddress = SocketAddress(
-            host: queueServerDeploymentDestination.host,
-            port: try selectPort(ports: suitablePorts)
-        )
-        logger.info("Found queue server at '\(queueServerAddress)'")
-
-        return queueServerAddress
-    }
-    
-    private func startNewInstanceOfRemoteQueueServer(
-        jobId: JobId,
-        queueServerDeploymentDestination: DeploymentDestination,
-        emceeVersion: Version,
-        queueServerConfigurationLocation: QueueServerConfigurationLocation,
-        logger: ContextualLogger
-    ) throws {
-        logger.info("No running queue server has been found. Will deploy and start remote queue.")
-        let remoteQueueStarter = RemoteQueueStarter(
-            deploymentId: jobId.value,
-            deploymentDestination: queueServerDeploymentDestination,
-            emceeVersion: emceeVersion,
-            logger: logger,
-            processControllerProvider: try di.get(),
-            queueServerConfigurationLocation: queueServerConfigurationLocation,
-            tempFolder: try di.get(),
-            uniqueIdentifierGenerator: try di.get()
-        )
-        try remoteQueueStarter.deployAndStart()
     }
     
     private func runTestsOnRemotelyRunningQueue(
@@ -292,15 +221,6 @@ public final class RunTestsOnRemoteQueueCommand: Command {
             completion: callbackWaiter.set
         )
         return try callbackWaiter.wait(timeout: .infinity, description: "Fetch job state").dematerialize()
-    }
-    
-    private func selectPort(ports: Set<SocketModels.Port>) throws -> SocketModels.Port {
-        struct NoRunningQueueFoundError: Error, CustomStringConvertible {
-            var description: String { "No running queue server found" }
-        }
-        
-        guard let port = ports.sorted().last else { throw NoRunningQueueFoundError() }
-        return port
     }
     
     private func deleteJob(jobId: JobId, logger: ContextualLogger) {

@@ -10,7 +10,7 @@ import UniqueIdentifierGenerator
 /// invokes the provided deployable commands.
 final class DistDeployer {
 
-    private let deploymentId: String
+    private let deploymentId: DeploymentId
     private let deploymentDestination: DeploymentDestination
     private let deployableItems: [DeployableItem]
     private let deployableCommands: [DeployableCommand]
@@ -20,7 +20,7 @@ final class DistDeployer {
     private let uniqueIdentifierGenerator: UniqueIdentifierGenerator
     
     public init(
-        deploymentId: String,
+        deploymentId: DeploymentId,
         deploymentDestination: DeploymentDestination,
         deployableItems: [DeployableItem],
         deployableCommands: [DeployableCommand],

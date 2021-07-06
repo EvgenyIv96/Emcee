@@ -1,6 +1,5 @@
 import ArgLib
 import DI
-import EmceeVersion
 import Foundation
 import EmceeLogging
 import QueueClient

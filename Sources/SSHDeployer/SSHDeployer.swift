@@ -13,7 +13,7 @@ public final class SSHDeployer: Deployer {
     
     public init(
         sshClientType: SSHClient.Type,
-        deploymentId: String,
+        deploymentId: DeploymentId,
         deployables: [DeployableItem],
         deployableCommands: [DeployableCommand],
         destination: DeploymentDestination,
@@ -52,10 +52,10 @@ public final class SSHDeployer: Deployer {
     public static func remoteContainerPath(
         forDeployable deployable: DeployableItem,
         destination: DeploymentDestination,
-        deploymentId: String
+        deploymentId: DeploymentId
     ) -> AbsolutePath {
         return destination.remoteDeploymentPath.appending(
-            components: [deploymentId, deployable.name]
+            components: [deploymentId.value, deployable.name]
         )
     }
     
@@ -63,7 +63,7 @@ public final class SSHDeployer: Deployer {
         deployable: DeployableItem,
         file: DeployableFile,
         destination: DeploymentDestination,
-        deploymentId: String
+        deploymentId: DeploymentId
     ) -> AbsolutePath {
         let container = remoteContainerPath(
             forDeployable: deployable,

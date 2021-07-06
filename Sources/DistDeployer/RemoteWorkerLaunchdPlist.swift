@@ -28,14 +28,14 @@ public final class RemoteWorkerLaunchdPlist {
         let containerPath = SSHDeployer.remoteContainerPath(
             forDeployable: executableDeployableItem,
             destination: deploymentDestination,
-            deploymentId: emceeVersion.value
+            deploymentId: DeploymentId(emceeVersion.value)
         )
         let emceeDeployableBinaryFile = try DeployableItemSingleFileExtractor(deployableItem: executableDeployableItem).singleDeployableFile()
         let workerBinaryRemotePath = SSHDeployer.remotePath(
             deployable: executableDeployableItem,
             file: emceeDeployableBinaryFile,
             destination: deploymentDestination,
-            deploymentId: emceeVersion.value
+            deploymentId: DeploymentId(emceeVersion.value)
         )
         let jobLabel = "ru.avito.emcee.worker.\(emceeVersion.value.removingWhitespaces())"
         let launchdPlist = LaunchdPlist(

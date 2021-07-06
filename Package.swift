@@ -281,6 +281,7 @@ let package = Package(
                 .product(name: "ProcessController", package: "CommandLineToolkit"),
                 "QueueModels",
                 .product(name: "Tmp", package: "CommandLineToolkit"),
+                .product(name: "Types", package: "CommandLineToolkit"),
                 "UniqueIdentifierGenerator",
             ],
             path: "Sources/Deployer"
@@ -289,6 +290,7 @@ let package = Package(
             name: "DeployerTestHelpers",
             dependencies: [
                 "Deployer",
+                .product(name: "PathLib", package: "CommandLineToolkit"),
             ],
             path: "Tests/DeployerTestHelpers"
         ),
@@ -471,7 +473,6 @@ let package = Package(
                 "ArgLib",
                 .product(name: "AtomicModels", package: "CommandLineToolkit"),
                 "AutomaticTermination",
-                "BucketQueue",
                 "BuildArtifacts",
                 "ChromeTracing",
                 "DI",
@@ -511,7 +512,6 @@ let package = Package(
                 "Runner",
                 "RunnerModels",
                 "ScheduleStrategy",
-                "Scheduler",
                 .product(name: "SignalHandling", package: "CommandLineToolkit"),
                 "SimulatorPool",
                 "SimulatorPoolModels",
@@ -527,7 +527,6 @@ let package = Package(
                 "UniqueIdentifierGenerator",
                 "WorkerAlivenessProvider",
                 "WorkerCapabilities",
-                "WorkerCapabilitiesModels",
             ],
             path: "Sources/EmceeLib"
         ),

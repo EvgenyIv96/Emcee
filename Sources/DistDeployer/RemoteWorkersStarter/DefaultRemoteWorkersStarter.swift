@@ -72,7 +72,7 @@ public final class DefaultRemoteWorkersStarter: RemoteWorkerStarter {
         )
         
         let deployer = DistDeployer(
-            deploymentId: emceeVersion.value,
+            deploymentId: DeploymentId(emceeVersion.value),
             deploymentDestination: deploymentDestination,
             deployableItems: deployableItems + [launchdDeployableItem],
             deployableCommands: [

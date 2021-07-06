@@ -7,7 +7,7 @@ import UniqueIdentifierGenerator
 
 /** Basic class that defines a logic for deploying a number of DeployableItems. */
 open class Deployer {
-    public let deploymentId: String
+    public let deploymentId: DeploymentId
     public let deployables: [DeployableItem]
     public let deployableCommands: [DeployableCommand]
     public let destination: DeploymentDestination
@@ -17,7 +17,7 @@ open class Deployer {
     private let uniqueIdentifierGenerator: UniqueIdentifierGenerator
 
     public init(
-        deploymentId: String,
+        deploymentId: DeploymentId,
         deployables: [DeployableItem],
         deployableCommands: [DeployableCommand],
         destination: DeploymentDestination,
