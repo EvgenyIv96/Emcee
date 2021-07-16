@@ -1,6 +1,7 @@
 import QueueCommunication
 import QueueCommunicationModels
 import QueueModels
+import SocketModels
 
 public class FakeAutoupdatingWorkerPermissionProvider: AutoupdatingWorkerPermissionProvider {
     public init() {}

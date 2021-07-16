@@ -2,7 +2,7 @@ import Foundation
 
 public enum RESTMethod: String, RESTPath {
     case bucketResult
-    case deploymentDestinations
+    case workerIds
     case disableWorker
     case enableWorker
     case getBucket

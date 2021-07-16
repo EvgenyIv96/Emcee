@@ -11,6 +11,7 @@ import MetricsExtensions
 import PortDeterminer
 import QueueCommunication
 import QueueModels
+import QueueServerPortProvider
 import RESTInterfaces
 import RESTMethods
 import RESTServer
@@ -28,7 +29,6 @@ import WorkerCapabilities
 public final class QueueServerImpl: QueueServer {
     private let bucketProvider: BucketProviderEndpoint
     private let bucketResultRegistrar: BucketResultRegistrar
-    private let deploymentDestinationsHandler: DeploymentDestinationsEndpoint
     private let disableWorkerHandler: DisableWorkerEndpoint
     private let enableWorkerHandler: EnableWorkerEndpoint
     private let httpRestServer: HTTPRESTServer
@@ -48,6 +48,7 @@ public final class QueueServerImpl: QueueServer {
     private let workerAlivenessMetricCapturer: WorkerAlivenessMetricCapturer
     private let workerAlivenessPoller: WorkerAlivenessPoller
     private let workerAlivenessProvider: WorkerAlivenessProvider
+    private let workerIdsEndpoint: WorkerIdsEndpoint
     private let workerRegistrar: WorkerRegistrar
     private let workerStatusEndpoint: WorkerStatusEndpoint
     private let workersToUtilizeEndpoint: WorkersToUtilizeEndpoint
@@ -57,7 +58,6 @@ public final class QueueServerImpl: QueueServer {
         bucketSplitInfo: BucketSplitInfo,
         checkAgainTimeInterval: TimeInterval,
         dateProvider: DateProvider,
-        deploymentDestinations: [DeploymentDestination],
         emceeVersion: Version,
         localPortDeterminer: LocalPortDeterminer,
         logger: ContextualLogger,
@@ -71,6 +71,7 @@ public final class QueueServerImpl: QueueServer {
         workerAlivenessProvider: WorkerAlivenessProvider,
         workerCapabilitiesStorage: WorkerCapabilitiesStorage,
         workerConfigurations: WorkerConfigurations,
+        workerIds: Set<WorkerId>,
         autoupdatingWorkerPermissionProvider: AutoupdatingWorkerPermissionProvider,
         workersToUtilizeService: WorkersToUtilizeService
     ) {
@@ -237,8 +238,8 @@ public final class QueueServerImpl: QueueServer {
             logger: logger, 
             service: workersToUtilizeService
         )
-        self.deploymentDestinationsHandler = DeploymentDestinationsEndpoint(
-            destinations: deploymentDestinations
+        self.workerIdsEndpoint = WorkerIdsEndpoint(
+            workerIds: workerIds
         )
         self.toggleWorkersSharingEndpoint = ToggleWorkersSharingEndpoint(
             autoupdatingWorkerPermissionProvider: autoupdatingWorkerPermissionProvider
@@ -248,7 +249,7 @@ public final class QueueServerImpl: QueueServer {
     public func start() throws -> SocketModels.Port {
         httpRestServer.add(handler: RESTEndpointOf(bucketProvider))
         httpRestServer.add(handler: RESTEndpointOf(bucketResultRegistrar))
-        httpRestServer.add(handler: RESTEndpointOf(deploymentDestinationsHandler))
+        httpRestServer.add(handler: RESTEndpointOf(workerIdsEndpoint))
         httpRestServer.add(handler: RESTEndpointOf(disableWorkerHandler))
         httpRestServer.add(handler: RESTEndpointOf(enableWorkerHandler))
         httpRestServer.add(handler: RESTEndpointOf(jobDeleteEndpoint))

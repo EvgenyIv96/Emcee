@@ -66,7 +66,6 @@ final class QueueServerTests: XCTestCase {
             bucketSplitInfo: bucketSplitInfo,
             checkAgainTimeInterval: .infinity,
             dateProvider: DateProviderFixture(),
-            deploymentDestinations: [],
             emceeVersion: "emceeVersion",
             localPortDeterminer: localPortDeterminer,
             logger: .noOp,
@@ -80,6 +79,7 @@ final class QueueServerTests: XCTestCase {
             workerAlivenessProvider: workerAlivenessProvider,
             workerCapabilitiesStorage: workerCapabilitiesStorage,
             workerConfigurations: workerConfigurations,
+            workerIds: [],
             autoupdatingWorkerPermissionProvider: FakeAutoupdatingWorkerPermissionProvider(),
             workersToUtilizeService: FakeWorkersToUtilizeService()
         )
@@ -112,7 +112,6 @@ final class QueueServerTests: XCTestCase {
             bucketSplitInfo: bucketSplitInfo,
             checkAgainTimeInterval: .infinity,
             dateProvider: DateProviderFixture(),
-            deploymentDestinations: [],
             emceeVersion: "emceeVersion",
             localPortDeterminer: localPortDeterminer,
             logger: .noOp,
@@ -126,6 +125,7 @@ final class QueueServerTests: XCTestCase {
             workerAlivenessProvider: workerAlivenessProvider,
             workerCapabilitiesStorage: workerCapabilitiesStorage,
             workerConfigurations: workerConfigurations,
+            workerIds: [],
             autoupdatingWorkerPermissionProvider: FakeAutoupdatingWorkerPermissionProvider(),
             workersToUtilizeService: FakeWorkersToUtilizeService()
         )

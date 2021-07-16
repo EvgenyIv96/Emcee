@@ -18,6 +18,7 @@ import ProcessController
 import QueueCommunication
 import QueueModels
 import QueueServer
+import QueueServerPortProvider
 import RemotePortDeterminer
 import RequestSender
 import ResourceLocationResolver
@@ -89,6 +90,7 @@ public final class StartQueueServerCommand: Command {
         ).createAutomaticTerminationController()
         
         let currentHostName = LocalHostDeterminer.currentHostAddress
+        let queueServerPortProvider = SourcableQueueServerPortProvider()
         
         let remotePortDeterminer = RemoteQueuePortScanner(
             hosts: [currentHostName],
@@ -104,16 +106,16 @@ public final class StartQueueServerCommand: Command {
                 remotePortDeterminer: remotePortDeterminer
             ),
             requestSenderProvider: try di.get(),
-            requestTimeout: 10,
-            version: emceeVersion
+            requestTimeout: 10
         )
         let autoupdatingWorkerPermissionProvider = AutoupdatingWorkerPermissionProviderImpl(
             communicationService: queueCommunicationService,
-            initialWorkerDestinations: workerDestinations,
+            initialWorkerIds: Set(workerDestinations.map { $0.workerId }),
             emceeVersion: emceeVersion,
             logger: logger,
             globalMetricRecorder: try di.get(),
-            queueHost: currentHostName
+            queueHost: currentHostName,
+            queueServerPortProvider: queueServerPortProvider
         )
         
         let workersToUtilizeService = DefaultWorkersToUtilizeService(
@@ -136,7 +138,6 @@ public final class StartQueueServerCommand: Command {
             uniqueIdentifierGenerator: try di.get(),
             workerDeploymentDestinations: workerDestinations
         )
-        let queueServerPortProvider = SourcableQueueServerPortProvider()
         let workerConfigurations = try createWorkerConfigurations(
             queueServerConfiguration: queueServerConfiguration
         )
@@ -148,7 +149,6 @@ public final class StartQueueServerCommand: Command {
             ),
             checkAgainTimeInterval: queueServerConfiguration.checkAgainTimeInterval,
             dateProvider: try di.get(),
-            deploymentDestinations: workerDestinations,
             emceeVersion: emceeVersion,
             localPortDeterminer: LocalPortDeterminer(
                 logger: logger,
@@ -174,6 +174,7 @@ public final class StartQueueServerCommand: Command {
             ),
             workerCapabilitiesStorage: WorkerCapabilitiesStorageImpl(),
             workerConfigurations: workerConfigurations,
+            workerIds: Set(workerDestinations.map { $0.workerId }),
             autoupdatingWorkerPermissionProvider: autoupdatingWorkerPermissionProvider,
             workersToUtilizeService: workersToUtilizeService
         )
@@ -197,7 +198,7 @@ public final class StartQueueServerCommand: Command {
             queueServerTerminationWaiter: queueServerTerminationWaiter,
             remotePortDeterminer: remotePortDeterminer,
             remoteWorkerStarterProvider: remoteWorkerStarterProvider,
-            workerIds: workerDestinations.map { $0.workerId },
+            workerIds: Set(workerDestinations.map { $0.workerId }),
             autoupdatingWorkerPermissionProvider: autoupdatingWorkerPermissionProvider
         )
         try localQueueServerRunner.start(emceeVersion: emceeVersion)

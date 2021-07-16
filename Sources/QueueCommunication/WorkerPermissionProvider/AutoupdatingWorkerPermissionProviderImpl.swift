@@ -1,38 +1,42 @@
 import AtomicModels
-import Deployer
 import LocalHostDeterminer
 import EmceeLogging
 import Metrics
 import MetricsExtensions
 import QueueCommunicationModels
 import QueueModels
+import QueueServerPortProvider
+import SocketModels
 import Timer
 
 public class AutoupdatingWorkerPermissionProviderImpl: AutoupdatingWorkerPermissionProvider {
     private let communicationService: QueueCommunicationService
-    private let initialWorkerDestinations: [DeploymentDestination]
+    private let initialWorkerIds: Set<WorkerId>
     private let emceeVersion: Version
     private let logger: ContextualLogger
     private let globalMetricRecorder: GlobalMetricRecorder
     private let pollingTrigger = DispatchBasedTimer(repeating: .seconds(60), leeway: .seconds(10))
     private let queueHost: String
+    private let queueServerPortProvider: QueueServerPortProvider
     private let workerIdsToUtilize: AtomicValue<Set<WorkerId>>
     
     public init(
         communicationService: QueueCommunicationService,
-        initialWorkerDestinations: [DeploymentDestination],
+        initialWorkerIds: Set<WorkerId>,
         emceeVersion: Version,
         logger: ContextualLogger,
         globalMetricRecorder: GlobalMetricRecorder,
-        queueHost: String
+        queueHost: String,
+        queueServerPortProvider: QueueServerPortProvider
     ) {
         self.communicationService = communicationService
-        self.initialWorkerDestinations = initialWorkerDestinations
+        self.initialWorkerIds = initialWorkerIds
         self.emceeVersion = emceeVersion
         self.logger = logger
         self.globalMetricRecorder = globalMetricRecorder
         self.queueHost = queueHost
-        self.workerIdsToUtilize = AtomicValue(Set(initialWorkerDestinations.workerIds()))
+        self.workerIdsToUtilize = AtomicValue(Set(initialWorkerIds))
+        self.queueServerPortProvider = queueServerPortProvider
         reportMetric()
     }
     
@@ -51,17 +55,27 @@ public class AutoupdatingWorkerPermissionProviderImpl: AutoupdatingWorkerPermiss
     public func stopUpdatingAndRestoreDefaultConfig() {
         logger.debug("Stopping polling workers to utilize")
         pollingTrigger.stop()
-        workerIdsToUtilize.set(Set(initialWorkerDestinations.workerIds()))
+        workerIdsToUtilize.set(Set(initialWorkerIds))
         reportMetric()
     }
     
     private func fetchWorkersToUtilize() {
+        let queuePort: SocketModels.Port
+        do {
+            queuePort = try queueServerPortProvider.port()
+        } catch {
+            logger.warning("Failed to get current queue port: \(error). This error will be ignored.")
+            return
+        }
+        
         communicationService.workersToUtilize(
-            deployments: initialWorkerDestinations,
+            queueInfo: QueueInfo(
+                queueAddress: SocketAddress(host: queueHost, port: queuePort),
+                queueVersion: emceeVersion
+            ),
+            workerIds: initialWorkerIds,
             completion: { [weak self] result in
-                guard let strongSelf = self else {
-                    return
-                }
+                guard let strongSelf = self else { return }
                 
                 do {
                     let workerIds = try result.dematerialize()

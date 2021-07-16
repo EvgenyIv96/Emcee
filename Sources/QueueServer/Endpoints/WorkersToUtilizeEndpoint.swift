@@ -23,10 +23,10 @@ public final class WorkersToUtilizeEndpoint: RESTEndpoint {
     public func handle(payload: WorkersToUtilizePayload) throws -> WorkersToUtilizeResponse {
         logger.debug("Received workers to utilize payload: \(payload)")
         return .workersToUtilize(
-            workerIds: Set(service.workersToUtilize(
-                initialWorkers: payload.deployments.workerIds(),
-                version: payload.version
-            ))
+            workerIds: service.workersToUtilize(
+                initialWorkerIds: payload.workerIds,
+                queueInfo: payload.queueInfo
+            )
         )
     }
 }

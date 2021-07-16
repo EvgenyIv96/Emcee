@@ -21,29 +21,30 @@ public class FakeQueueCommunicationService: QueueCommunicationService {
     }
      
     public func workersToUtilize(
-        deployments: [DeploymentDestination],
+        queueInfo: QueueInfo,
+        workerIds: Set<WorkerId>,
         completion: @escaping (Either<Set<WorkerId>, Error>) -> ()
     ) {
         completionHandler(completion)
     }
     
-    public var deploymentDestinationsCallAddresses = [SocketAddress]()
-    public var workersPerSocketAddress: [SocketAddress: [WorkerId]] = [:]
+    public var allQueriedQueueAddresses = [SocketAddress]()
+    public var workersPerSocketAddress: [SocketAddress: Set<WorkerId>] = [:]
     public var deploymentDestinationsAsync = false
-    public func deploymentDestinations(
-        socketAddress: SocketAddress,
-        completion: @escaping (Either<[DeploymentDestination], Error>) -> ())
+    public func queryQueueForWorkerIds(
+        queueAddress: SocketAddress,
+        completion: @escaping (Either<Set<WorkerId>, Error>) -> ())
     {
-        deploymentDestinationsCallAddresses.append(socketAddress)
+        allQueriedQueueAddresses.append(queueAddress)
         
-        let deployents = (workersPerSocketAddress[socketAddress] ?? []).map { DeploymentDestinationFixtures().with(host: $0.value).build() }
+        let workerIds = workersPerSocketAddress[queueAddress] ?? Set()
         
         if deploymentDestinationsAsync {
             callbackQueue.asyncAfter(deadline: .now() + 1) {
-                completion(.success(deployents))
+                completion(.success(workerIds))
             }
         } else {
-            completion(.success(deployents))
+            completion(.success(workerIds))
         }        
     }
 }
